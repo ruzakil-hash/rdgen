@@ -346,7 +346,11 @@ jobs:
           flutter pub get
           flutter pub run flutter_launcher_icons
           cd ..
-
+      - name: Setup Windows SDK
+        uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+        with:
+          sdk-version: 22621
+    
       - name: Build rustdesk
         run: |
           # Windows: build RustDesk
