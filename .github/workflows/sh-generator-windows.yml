@@ -411,12 +411,17 @@ jobs:
       # Installing VS2022 side-by-side isn't enough: flutter_tools calls
       # `vswhere -latest`, which still prefers the runner's pre-installed
       # VS2026 (Enterprise, majorVersion 18) since it already satisfies every
-      # component requirement. Hide any non-VS2022 instance from vswhere's
-      # instance registry so it can only report the VS2022 install we just made.
+      # component requirement. vswhere discovers instances by scanning every
+      # subdirectory directly under _Instances, so a same-directory rename
+      # (tried previously, commit 1afc74c) doesn't hide anything - it still
+      # finds the folder under its new name. Move the folder fully OUTSIDE
+      # _Instances instead so the scan never sees it.
       - name: Hide VS2026 from vswhere so Flutter picks up VS2022
         shell: pwsh
         run: |
           $instancesRoot = "$env:ProgramData\Microsoft\VisualStudio\Packages\_Instances"
+          $hiddenRoot = "$env:TEMP\hidden_vs_instances"
+          New-Item -ItemType Directory -Force -Path $hiddenRoot | Out-Null
           if (Test-Path $instancesRoot) {
             Get-ChildItem $instancesRoot -Directory | ForEach-Object {
               $stateFile = Join-Path $_.FullName "state.json"
@@ -424,8 +429,8 @@ jobs:
                 $version = (Get-Content $stateFile -Raw | ConvertFrom-Json).installationVersion
                 Write-Host "Found VS instance $($_.Name): version $version"
                 if ($version -and $version.Split('.')[0] -ne '17') {
-                  Write-Host "Hiding instance $($_.Name) (version $version) from vswhere"
-                  Rename-Item -Path $_.FullName -NewName "$($_.Name)_hidden" -Force
+                  Write-Host "Moving instance $($_.Name) (version $version) out of vswhere's search path"
+                  Move-Item -Path $_.FullName -Destination (Join-Path $hiddenRoot $_.Name) -Force
                 }
               }
             }
