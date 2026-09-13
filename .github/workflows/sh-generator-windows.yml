@@ -399,6 +399,15 @@ jobs:
           fi
         shell: bash
 
+      # The windows-2022 runner now ships Visual Studio 2026 (majorVersion 18).
+      # Flutter 3.24.5's flutter_tools only recognizes majorVersion 17 (VS2022) and
+      # falls back to the nonexistent "Visual Studio 16 2019" generator otherwise,
+      # so install VS2022 Build Tools side-by-side to give it a v17 instance to find.
+      - name: Install Visual Studio 2022 Build Tools (Flutter 3.24 doesn't recognize VS2026)
+        shell: pwsh
+        run: |
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CMake.Project --includeRecommended --passive --norestart" -y --no-progress
+
       - name: Build rustdesk
         run: |
           # Windows: build RustDesk
